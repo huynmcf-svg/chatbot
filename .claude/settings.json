@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//tmp/**)",
+      "Bash(command -v gs)",
+      "Bash(timeout 300 gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/tmp/profile-ebook.pdf 'Profile C-print. VIE_4.pdf')",
+      "Bash(awk '{printf \"ebook: %.1f MB\\\\n\", $5/1048576}')",
+      "Bash(timeout 300 gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/tmp/profile-screen.pdf 'Profile C-print. VIE_4.pdf')",
+      "Bash(awk '{printf \"%s  \\(%.1f MB\\)\\\\n\", $NF, $5/1048576}')"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

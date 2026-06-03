@@ -1,0 +1,67 @@
+:root {
+  /* Bảng màu thương hiệu C-Print (lấy tông xanh từ logo) */
+  --brand-50: #eef5fb;
+  --brand-100: #d8e8f5;
+  --brand-200: #b0cde8;
+  --brand-300: #82acd6;
+  --brand-400: #5288bd;
+  --brand-500: #336aa6; /* màu chính */
+  --brand-600: #2a5688;
+  --brand-700: #234670;
+  --brand-800: #1d3a5c; /* navy của chữ C-PRINT */
+  --brand-900: #15293f;
+
+  --user-grad: linear-gradient(135deg, #3f7cbb 0%, #2a5688 100%);
+  --cta-grad: linear-gradient(135deg, #4a86c4 0%, #2a5688 100%);
+
+  --bot-bubble: #ffffff;
+  --bot-text: #1f2937;
+  --muted: #6b7a8d;
+  --line: #e6edf4;
+
+  --shadow-sm: 0 1px 2px rgba(21, 41, 63, 0.06);
+  --shadow-md: 0 6px 20px rgba(21, 41, 63, 0.1);
+  --shadow-lg: 0 24px 60px rgba(21, 41, 63, 0.22);
+
+  --radius: 20px;
+
+  font-family: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--bot-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #eaf3fb 0%, #dfeaf5 100%);
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
