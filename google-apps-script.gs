@@ -7,7 +7,9 @@
  *    Mở file -> Share -> "Anyone with the link" (để khách bấm link xem online được).
  *    Lấy ID trong URL: .../file/d/<ID>/view  ->  dán vào PROFILE.fileId bên dưới.
  * 3. (Tuỳ chọn) Upload logo "src/assets/c-print.png" lên Drive, lấy ID -> BRAND.logoFileId
- *    để hiển thị logo ảnh trong email. Bỏ trống thì email dùng chữ "C-PRINT".
+ *    và "src/assets/konica.png" lên Drive, lấy ID -> BRAND.konicaLogoFileId
+ *    để hiển thị 2 logo (C-Print bên trái, Konica bên phải) ở đầu email.
+ *    Bỏ trống thì email dùng chữ "C-PRINT" / "KONICA MINOLTA".
  * 4. Extensions ▸ Apps Script: dán toàn bộ file này, Lưu.
  * 5. Deploy ▸ New deployment ▸ Web app:
  *       Execute as: Me   |   Who has access: Anyone (Bất kỳ ai)
@@ -26,8 +28,20 @@ var BRAND = {
   website: 'https://c-print.com.vn/',
   facebook: 'https://www.facebook.com/cprintvietnam',
   youtube: 'https://www.youtube.com/@c-print',
-  replyTo: '', // (tuỳ chọn) email nhận phản hồi, vd 'info@c-print.com.vn'
-  logoFileId: '1UFQ1KeQi0-K7wii6CEv4Q6iU7GkbxZ8t', // ID ảnh logo trên Drive -> hiển thị logo trong email
+  email: 'sales@c-print.com.vn', // email liên hệ hiển thị trong mail
+  phone: '+84 941 498 866', // SĐT liên hệ hiển thị trong mail
+  address: 'Số 6, ngõ 167 Phương Mai, Đống Đa, Hà Nội', // địa chỉ hiển thị trong mail
+  // Thương hiệu phân phối (dải logo cuối email). Upload từng ảnh trong src/assets lên Drive,
+  // share "Anyone with the link", rồi dán ID vào fileId tương ứng. Để trống fileId thì bỏ qua logo đó.
+  partners: [
+    { name: 'Miyakoshi', fileId: '' }, // src/assets/miyakoshi.png (đã cắt viền trắng)
+    { name: 'Hanglory', fileId: '' },  // src/assets/hanglory.png
+    { name: 'JMD', fileId: '' },       // src/assets/jmd.jpeg
+    { name: 'Brotech', fileId: '' },   // src/assets/brotech.png
+  ],
+  replyTo: 'sales@c-print.com.vn', // email nhận phản hồi khi khách bấm "Trả lời"
+  logoFileId: '1UFQ1KeQi0-K7wii6CEv4Q6iU7GkbxZ8t', // ID logo C-Print trên Drive (nửa trái header)
+  konicaLogoFileId: '', // ID logo Konica trên Drive (nửa phải header) – upload src/assets/konica.png
   primary: '#2a5688',
   primaryLight: '#3f7cbb',
   navy: '#1d3a5c',
@@ -102,15 +116,41 @@ function sendThankYouEmail(data) {
     var warn = '';
 
     // Logo inline (nếu có & lấy được từ Drive)
+    var inline = {};
     var logoOk = false;
+    var konicaOk = false;
     if (BRAND.logoFileId) {
       try {
-        options.inlineImages = { cprintLogo: DriveApp.getFileById(BRAND.logoFileId).getBlob() };
+        inline.cprintLogo = DriveApp.getFileById(BRAND.logoFileId).getBlob();
         logoOk = true;
       } catch (e) {
-        warn += ' | logo lỗi: ' + e;
+        warn += ' | logo C-Print lỗi: ' + e;
       }
     }
+    if (BRAND.konicaLogoFileId) {
+      try {
+        inline.konicaLogo = DriveApp.getFileById(BRAND.konicaLogoFileId).getBlob();
+        konicaOk = true;
+      } catch (e) {
+        warn += ' | logo Konica lỗi: ' + e;
+      }
+    }
+    // Logo đối tác (mỗi cái là 1 inline image riêng)
+    var partnerCids = [];
+    // Konica cũng là đối tác – tái dùng logo đã nạp ở header (không cần dán ID lần 2).
+    if (konicaOk) partnerCids.push({ name: 'Konica Minolta', cid: 'konicaLogo' });
+    (BRAND.partners || []).forEach(function (p, i) {
+      if (!p.fileId) return;
+      try {
+        var cid = 'partner' + i;
+        inline[cid] = DriveApp.getFileById(p.fileId).getBlob();
+        partnerCids.push({ name: p.name, cid: cid });
+      } catch (e) {
+        warn += ' | logo ' + p.name + ' lỗi: ' + e;
+      }
+    });
+
+    if (logoOk || konicaOk || partnerCids.length) options.inlineImages = inline;
 
     // Đính kèm hồ sơ PDF (lỗi thì BỎ QUA attachment nhưng VẪN gửi email)
     if (PROFILE.attach && PROFILE.fileId) {
@@ -124,7 +164,7 @@ function sendThankYouEmail(data) {
     }
 
     // Build HTML sau khi biết logo có lấy được không (tránh ảnh vỡ)
-    options.htmlBody = buildEmailHtml(data, logoOk);
+    options.htmlBody = buildEmailHtml(data, logoOk, konicaOk, partnerCids);
 
     GmailApp.sendEmail(to, 'Cảm ơn Anh/Chị đã ghé thăm gian hàng C-Print', plainText(data), options);
     return warn ? ('OK (đã gửi, nhưng:' + warn + ')') : 'OK';
@@ -137,18 +177,23 @@ function plainText(data) {
   return [
     'Xin chào ' + (data.name || 'Anh/Chị') + ',',
     '',
-    'Cảm ơn Anh/Chị đã dành thời gian ghé thăm gian hàng C-Print.',
+    'Cảm ơn Quý Anh/Chị đã dành thời gian ghé thăm gian hàng C-Print & Konica Minolta.',
     '',
-    'Thông tin đã ghi nhận:',
+    'C-Print ghi nhận thông tin của Quý Anh/Chị:',
     '- Công ty: ' + (data.company || '-'),
     '- Lĩnh vực quan tâm: ' + (data.service || '-'),
+    '',
+    'Liên hệ:',
+    '- Email: ' + BRAND.email,
+    '- Điện thoại: ' + BRAND.phone,
+    '- Địa chỉ: ' + BRAND.address,
     '',
     'Website: ' + BRAND.website,
     'Facebook: ' + BRAND.facebook,
     'YouTube: ' + BRAND.youtube,
     '',
     'Hồ sơ năng lực C-Print được đính kèm trong email này.',
-    'Chúng tôi sẽ liên hệ với Anh/Chị trong thời gian sớm nhất.',
+    'Chúng tôi sẽ liên hệ với Quý Anh/Chị trong thời gian sớm nhất.',
     '',
     'Trân trọng,',
     'C-Print',
@@ -156,15 +201,31 @@ function plainText(data) {
 }
 
 // ====================== TEMPLATE HTML ======================
-function buildEmailHtml(data, logoOk) {
+function buildEmailHtml(data, logoOk, konicaOk, partners) {
   var name = esc(data.name || 'Anh/Chị');
   var company = esc(data.company || '—');
   var service = esc(data.service || '—');
   var profileView = PROFILE.viewUrl || (PROFILE.fileId ? 'https://drive.google.com/file/d/' + PROFILE.fileId + '/view' : BRAND.website);
 
-  var logoBlock = logoOk
-    ? '<img src="cid:cprintLogo" width="76" alt="C-Print" style="display:block;margin:0 auto 10px;border-radius:14px;background:#fff;padding:8px;" />'
-    : '<div style="font:700 30px/1 Arial,sans-serif;letter-spacing:3px;color:#ffffff;margin-bottom:6px;">C-PRINT</div>';
+  // Logo C-Print (nửa trái) và Konica (nửa phải) – đặt trong ô nền trắng để nổi trên header xanh.
+  var cprintLogo = logoOk
+    ? '<img src="cid:cprintLogo" width="84" height="84" alt="C-Print" style="display:block;margin:0 auto;width:84px;height:84px;" />'
+    : '<div style="font:700 22px/1 Arial,sans-serif;letter-spacing:2px;color:' + BRAND.primary + ';">C-PRINT</div>';
+  var konicaLogo = konicaOk
+    ? '<img src="cid:konicaLogo" width="146" alt="Konica Minolta" style="display:block;margin:0 auto;width:146px;height:auto;" />'
+    : '<div style="font:700 16px/1.2 Arial,sans-serif;color:#007ec5;">KONICA<br>MINOLTA</div>';
+
+  var logoBox = function (inner) {
+    return '<div style="background:#ffffff;border-radius:14px;padding:14px 12px;text-align:center;">' + inner + '</div>';
+  };
+
+  // Dải logo thương hiệu phân phối – mỗi logo trong ô trắng bo góc, cao đồng đều.
+  var partnersRow = (partners || []).map(function (p) {
+    return '<td valign="middle" align="center" style="padding:5px;">' +
+      '<div style="background:#ffffff;border:1px solid #e6edf4;border-radius:8px;padding:9px 8px;">' +
+        '<img src="cid:' + p.cid + '" alt="' + esc(p.name) + '" height="30" style="height:30px;width:auto;max-width:118px;display:block;margin:0 auto;" />' +
+      '</div></td>';
+  }).join('');
 
   return '' +
 '<!doctype html><html><body style="margin:0;padding:0;background:#eef3f8;">' +
@@ -173,17 +234,20 @@ function buildEmailHtml(data, logoOk) {
 '<tr><td align="center">' +
   '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(21,41,63,.12);font-family:Arial,Helvetica,sans-serif;">' +
 
-    // Header
-    '<tr><td align="center" style="background:' + BRAND.primary + ';background:linear-gradient(135deg,' + BRAND.primaryLight + ',' + BRAND.primary + ');padding:32px 24px;">' +
-      logoBlock +
-      '<div style="color:rgba(255,255,255,.92);font:600 14px Arial,sans-serif;letter-spacing:.3px;">' + esc(BRAND.tagline) + '</div>' +
+    // Header: 2 cột — C-Print (trái) | Konica (phải)
+    '<tr><td style="background:' + BRAND.primary + ';background:linear-gradient(135deg,' + BRAND.primaryLight + ',' + BRAND.primary + ');padding:28px 24px;">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+        '<td width="50%" valign="middle" style="padding:0 8px;">' + logoBox(cprintLogo) + '</td>' +
+        '<td width="50%" valign="middle" style="padding:0 8px;">' + logoBox(konicaLogo) + '</td>' +
+      '</tr></table>' +
+      '<div style="color:rgba(255,255,255,.92);font:600 14px Arial,sans-serif;letter-spacing:.3px;text-align:center;margin-top:16px;">' + esc(BRAND.tagline) + '</div>' +
     '</td></tr>' +
 
     // Body
-    '<tr><td style="padding:32px 32px 8px;color:#27313b;font-size:15px;line-height:1.6;">' +
+    '<tr><td style="padding:32px 32px 28px;color:#27313b;font-size:15px;line-height:1.6;">' +
       '<p style="margin:0 0 14px;">Xin chào <b style="color:' + BRAND.navy + ';">' + name + '</b>,</p>' +
-      '<p style="margin:0 0 14px;">Cảm ơn Anh/Chị đã dành thời gian ghé thăm gian hàng <b>C-Print</b>.</p>' +
-      '<p style="margin:0 0 14px;color:#5b6b7a;">Chúng tôi đã ghi nhận thông tin của Anh/Chị:</p>' +
+      '<p style="margin:0 0 14px;">Cảm ơn Quý Anh/Chị đã dành thời gian ghé thăm gian hàng <b>C-Print &amp; Konica Minolta</b>.</p>' +
+      '<p style="margin:0 0 14px;color:#5b6b7a;">C-Print ghi nhận thông tin của Quý Anh/Chị:</p>' +
 
       // Info card
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f6fb;border-left:4px solid ' + BRAND.primary + ';border-radius:10px;margin:0 0 22px;">' +
@@ -193,7 +257,7 @@ function buildEmailHtml(data, logoOk) {
         '</td></tr>' +
       '</table>' +
 
-      '<p style="margin:0 0 16px;">Để tìm hiểu thêm về C-Print và các giải pháp công nghệ ngành in nhãn &amp; bao bì, Anh/Chị có thể tham khảo:</p>' +
+      '<p style="margin:0 0 16px;">Để tìm hiểu thêm về C-Print &amp; các giải pháp công nghệ ngành in nhãn, bao bì &amp; tem, Quý Anh/Chị có thể tham khảo:</p>' +
 
       // Buttons
       '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;"><tr>' +
@@ -205,9 +269,18 @@ function buildEmailHtml(data, logoOk) {
         ? '<p style="margin:0 0 16px;padding:12px 14px;background:#fff7ec;border:1px solid #ffe2b8;border-radius:10px;font-size:13.5px;color:#7a5a1e;"><b>Hồ sơ năng lực C-Print (PDF)</b> được đính kèm trong email này.</p>'
         : '' ) +
 
-      '<p style="margin:0 0 14px;">Chúng tôi sẽ liên hệ với Anh/Chị trong thời gian sớm nhất.</p>' +
+      '<p style="margin:0 0 14px;">Chúng tôi sẽ liên hệ với Quý Anh/Chị trong thời gian sớm nhất.</p>' +
       '<p style="margin:18px 0 4px;">Trân trọng,</p>' +
-      '<p style="margin:0;font-weight:700;color:' + BRAND.navy + ';">C-Print</p>' +
+      '<p style="margin:0 0 18px;font-weight:700;color:' + BRAND.navy + ';">C-Print</p>' +
+
+      // Khối liên hệ: email + SĐT + địa chỉ (đặt dưới chữ ký C-Print)
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f6fb;border-radius:10px;margin:0;">' +
+        '<tr><td style="padding:14px 18px;font-size:14px;line-height:1.8;color:#27313b;">' +
+          '<span style="color:#7a8a9a;">Email:</span> <a href="mailto:' + BRAND.email + '" style="color:' + BRAND.primary + ';font-weight:700;text-decoration:none;">' + esc(BRAND.email) + '</a><br>' +
+          '<span style="color:#7a8a9a;">Điện thoại:</span> <a href="tel:' + BRAND.phone.replace(/\s/g, '') + '" style="color:' + BRAND.primary + ';font-weight:700;text-decoration:none;">' + esc(BRAND.phone) + '</a><br>' +
+          '<span style="color:#7a8a9a;">📍 Địa chỉ:</span> ' + esc(BRAND.address) +
+        '</td></tr>' +
+      '</table>' +
     '</td></tr>' +
 
     // Footer
@@ -222,6 +295,14 @@ function buildEmailHtml(data, logoOk) {
         '<span style="color:#8fa3bb;">' + esc(BRAND.note) + '</span>' +
       '</div>' +
     '</td></tr>' +
+
+    // Dải logo đối tác (dưới cùng)
+    ( partnersRow
+      ? '<tr><td style="padding:20px 18px;background:#fafcfe;border-top:1px solid #eef2f6;">' +
+          '<div style="color:#7a8a9a;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px;text-align:center;">Đối tác</div>' +
+          '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' + partnersRow + '</tr></table>' +
+        '</td></tr>'
+      : '' ) +
 
   '</table>' +
 '</td></tr></table>' +

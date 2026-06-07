@@ -21,6 +21,9 @@ export type FlowStep =
   | { kind: 'submit' }
   | { kind: 'link'; label: string; url: string }
 
+/** Nhãn cho lựa chọn tự nhập – khi bấm sẽ hiện ô để người dùng gõ dịch vụ riêng. */
+export const OTHER_OPTION = 'Lựa chọn khác'
+
 /** Các dịch vụ C-Print cung cấp (nút lựa chọn). */
 export const SERVICES = [
   'Giải pháp in ấn trọn gói',
@@ -53,7 +56,7 @@ export const flow: FlowStep[] = [
     kind: 'choice',
     field: 'service',
     prompt: 'Anh/Chị đang quan tâm đến dịch vụ nào của C-Print?',
-    options: SERVICES,
+    options: [...SERVICES, OTHER_OPTION],
   },
   { kind: 'submit' },
   { kind: 'say', text: 'Done! Cảm ơn Anh/Chị đã dành chút thời gian cho C-Print 🎉' },

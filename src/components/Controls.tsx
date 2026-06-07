@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from '../countries'
-import type { FlowStep } from '../flow'
+import { OTHER_OPTION, type FlowStep } from '../flow'
 
 function SendIcon() {
   return (
@@ -188,12 +188,29 @@ function PhoneField({ onSubmit }: { onSubmit: (value: string) => void }) {
   )
 }
 
-/** Danh sách nút lựa chọn dịch vụ. */
+/** Danh sách nút lựa chọn dịch vụ – riêng "Lựa chọn khác" sẽ mở ô tự nhập. */
 function Choices({ options, onSelect }: { options: string[]; onSelect: (v: string) => void }) {
+  const [custom, setCustom] = useState(false)
+
+  if (custom) {
+    return (
+      <TextField
+        type="text"
+        placeholder="Nhập dịch vụ Anh/Chị quan tâm..."
+        onSubmit={onSelect}
+      />
+    )
+  }
+
   return (
     <div className="choices">
       {options.map((opt) => (
-        <button type="button" key={opt} className="choice" onClick={() => onSelect(opt)}>
+        <button
+          type="button"
+          key={opt}
+          className="choice"
+          onClick={() => (opt === OTHER_OPTION ? setCustom(true) : onSelect(opt))}
+        >
           {opt}
         </button>
       ))}
