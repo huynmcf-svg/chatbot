@@ -137,8 +137,11 @@ function sendThankYouEmail(data) {
     }
     // Logo đối tác (mỗi cái là 1 inline image riêng)
     var partnerCids = [];
-    // Konica cũng là đối tác – tái dùng logo đã nạp ở header (không cần dán ID lần 2).
-    if (konicaOk) partnerCids.push({ name: 'Konica Minolta', cid: 'konicaLogo' });
+    // Konica cũng là đối tác – dùng BẢN SAO ảnh (cid khác header) để Gmail không bỏ ảnh trùng cid.
+    if (konicaOk) {
+      inline.partnerKonica = inline.konicaLogo.copyBlob();
+      partnerCids.push({ name: 'Konica Minolta', cid: 'partnerKonica' });
+    }
     (BRAND.partners || []).forEach(function (p, i) {
       if (!p.fileId) return;
       try {
@@ -278,7 +281,7 @@ function buildEmailHtml(data, logoOk, konicaOk, partners) {
         '<tr><td style="padding:14px 18px;font-size:14px;line-height:1.8;color:#27313b;">' +
           '<span style="color:#7a8a9a;">Email:</span> <a href="mailto:' + BRAND.email + '" style="color:' + BRAND.primary + ';font-weight:700;text-decoration:none;">' + esc(BRAND.email) + '</a><br>' +
           '<span style="color:#7a8a9a;">Điện thoại:</span> <a href="tel:' + BRAND.phone.replace(/\s/g, '') + '" style="color:' + BRAND.primary + ';font-weight:700;text-decoration:none;">' + esc(BRAND.phone) + '</a><br>' +
-          '<span style="color:#7a8a9a;">📍 Địa chỉ:</span> ' + esc(BRAND.address) +
+          '<span style="color:#7a8a9a;">Địa chỉ:</span> ' + esc(BRAND.address) +
         '</td></tr>' +
       '</table>' +
     '</td></tr>' +

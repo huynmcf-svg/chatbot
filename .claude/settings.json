@@ -14,7 +14,10 @@
       "Bash(node -e \"try{require\\('sharp'\\);console.log\\('sharp available'\\)}catch\\(e\\){console.log\\('no sharp'\\)}\")",
       "Bash(which google-chrome *)",
       "Read(//usr/bin/**)",
-      "Bash(timeout 60 google-chrome-stable --headless --no-sandbox --disable-gpu --hide-scrollbars --window-size=680,1400 --screenshot=/tmp/email-shot.png file://__TRACKED_VAR__/email-preview.html)"
+      "Bash(timeout 60 google-chrome-stable --headless --no-sandbox --disable-gpu --hide-scrollbars --window-size=680,1400 --screenshot=/tmp/email-shot.png file://__TRACKED_VAR__/email-preview.html)",
+      "Bash(cp google-apps-script.gs /tmp/gas-check.js)",
+      "Bash(node --check /tmp/gas-check.js)",
+      "Bash(rm /tmp/gas-check.js)"
     ],
     "additionalDirectories": [
       "/tmp"
